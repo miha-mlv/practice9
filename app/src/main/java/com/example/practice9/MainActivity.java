@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.media.MediaParser;
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -17,6 +19,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -25,9 +29,13 @@ public class MainActivity extends AppCompatActivity {
     Button btnSaveFile, btnReadFile, btnDeleteFile, btnWriteFile;
     EditText editContentFile, editFileName;
     TextView textView;
+    Button btnWriteExternal;
+    Button btnDeleteExternal;
+    Button btnReadExternal;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d("Create", "Create_act");
         setContentView(R.layout.activity_main);
         init();
         //Создание файла
@@ -126,7 +134,80 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // Пример создания текстового файла в публичной директории "Documents"
+        btnWriteExternal.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                File storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+                if (!storageDir.exists()) {
+                    storageDir.mkdirs(); // Создаем директорию, если она несуществует
+                }
+                File file = new File(storageDir, editFileName.getText().toString());
+                try {
+                    if (!file.exists()) {
+                        boolean created = file.createNewFile(); // Создаем файл,если он не существует
+                        if (created) {
+                            // Записываем данные в файл
+                            FileWriter writer = new FileWriter(file);
+                            writer.append(editContentFile.getText().toString());
+                            writer.flush();
+                            writer.close();
+                            Toast.makeText(MainActivity.this, "Успешно создан и записан", Toast.LENGTH_LONG).show();
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Toast.makeText(MainActivity.this, "Ошибка", Toast.LENGTH_LONG).show();
+                }
+            }
+        });
+
+        btnDeleteExternal.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                File storageDir =
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+                File file = new File(storageDir, editFileName.getText().toString());
+                if (file.exists()) {
+                    boolean deleted = file.delete();
+                    if (deleted) {
+                        // Файл успешно удален
+                        Toast.makeText(MainActivity.this,"File deleted", Toast.LENGTH_LONG).show();
+                    } else {
+                        // Не удалось удалить файл
+                        Toast.makeText(MainActivity.this,"Ошибка", Toast.LENGTH_LONG).show();
+                    }
+                }
+            }
+        });
+
+        btnReadExternal.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                File storageDir =
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
+                File file = new File(storageDir, editFileName.getText().toString());
+                if (file.exists()) {
+                    StringBuilder text = new StringBuilder();
+                    try {
+                        BufferedReader br = new BufferedReader(new FileReader(file));
+                        String line;
+                        while ((line = br.readLine()) != null) {
+                            text.append(line);
+                            text.append('\n');
+                        }
+                        br.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    String fileContent = text.toString();
+                    editContentFile.setText(fileContent);
+                }
+
+            }
+        });
     }
+
     private void init()
     {
     btnDeleteFile = findViewById(R.id.btnDeleteFile);
@@ -136,10 +217,14 @@ public class MainActivity extends AppCompatActivity {
     editContentFile = findViewById(R.id.editContentFile);
     editFileName = findViewById(R.id.editFileName);
     textView = findViewById(R.id.textView);
+    btnWriteExternal = findViewById(R.id.btnWriteExternal);
+    btnDeleteExternal = findViewById(R.id.btnDeleteExternal);
+    btnReadExternal = findViewById(R.id.btnReadExternal);
 }
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+        Log.d("onSaveInstanceState", "onSaveInstanceState_act");
         outState.putString("key_EditFileName", editFileName.getText().toString());
         outState.putString("key_EditContentFile", editContentFile.getText().toString());
         outState.putString("key_textView", textView.getText().toString());
@@ -148,6 +233,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
+        Log.d("onRestoreInstanceState", "onRestoreInstanceState_act");
         editFileName.setText(savedInstanceState.getString("key_EditFileName"));
         editContentFile.setText(savedInstanceState.getString("key_EditContentFile"));
         textView.setText(savedInstanceState.getString("key_textView"));
